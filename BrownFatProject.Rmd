@@ -1,0 +1,106 @@
+---
+title: "FinalProject"
+author: "Hanxiao Du 1004439529, Jeffery Wei Xuan Su 1004139684"
+date: "11/29/2020"
+output:
+  word_document: default
+  html_document: default
+---
+
+
+```{r}
+library("readxl")
+bfat = read_excel("BrownFat.xls")
+```
+
+The relation between sex and presence of brown fat.
+```{r}
+table.sex = table(bfat$BrownFat, bfat$Sex)
+colnames(table.sex) = c("Female", "Male")
+rownames(table.sex) = c("No", "Yes")
+print(table.sex)
+```
+The observed odds ratio of brown fat(No, Yes) and sex(Female, Male) is 0.3013386, The observed probability of presence of brown fat among males is 0.3013386 times of the observed probability of presence of brown fat among females.
+
+A Pearson Chi-square test of independent of the presence of brown fat and sex.
+```{r}
+# A Pearson Chi-square test of independent of the presence of brown fat and sex.
+chisq.test(table.sex)
+```
+The p-value is $2.2 \times 10^{-16}$, thus we reject the null hypothesis, which implies that the presence of brown fat is dependent on sex.
+
+The relation between diabetes and presence of brown fat.
+```{r}
+table.diabete = table(bfat$BrownFat, bfat$Diabetes)
+colnames(table.diabete) = c("Diabetes_No", "Diabetes_Yes")
+rownames(table.diabete) = c("No", "Yes")
+print(table.diabete)
+```
+The observed odds ratio of brown fat(No, Yes) and Diabetes(No, Yes) is 0.1421921.Thus, the observed probability of presence of brown fat among people with diabetes is 0.1421921 times of the observed probability of presence of brown fat among people with no diabetes. This implies that the presence of brown fat can restrain the presence of diabetes.
+
+
+
+```{r}
+table.cancer_status = table(bfat$BrownFat[bfat$Cancer_Status != "NA"], bfat$Cancer_Status[bfat$Cancer_Status != "NA"])
+colnames(table.cancer_status) = c("Cancer_NO", "Cancer_YES")
+rownames(table.cancer_status) = c("No", "Yes")
+print(table.cancer_status)
+```
+
+A Pearson Chi-square test of independent of the presence of brown fat and cancer status.
+```{r}
+# A Pearson Chi-square test of independent of the presence of brown fat and cancer status.
+chisq.test(table.cancer_status)
+```
+Since p-value is 0.2909, thus we cannot reject the null hypothesis, so there is no significant evidence that the presence of brown fat is dependent to cancer status.
+
+
+
+A visualization of the relation of external temperature, sex and brown fat volume.
+```{r}
+library(ggplot2)
+ggplot(bfat, aes(Ext_Temp, y=Total_vol, color = as.factor(Sex)))+geom_point()
+```
+From the plot, females generally have a higher total volume of brown fat compare to males.
+In addition, regardless of sex, individuals tend to have higher volume of brown fat if the external temperature is close to 0.
+
+
+A visualization of the relation of external Age and brown fat volume.
+```{r}
+ggplot(bfat, aes(x=Age, y=Total_vol))+geom_point()
+```
+From the plot, individuals tend to have higher total volume of brown fat if age is close to 50.
+
+A visualization of the relation of external Age and brown fat volume.
+```{r}
+ggplot(bfat, aes(x=Size, y=Total_vol))+geom_point()
+```
+From the plot, we can see that the presence of brown fat in size group 75-137.5 (cm) is 0, the reason for this could be the size is related to the age, and from the plot of the age, if the age is relatively small, the chance of having brown fat is very low.
+
+
+
+Fit a model of all covariates without interaction.
+```{r}
+bfat.presence = glm(BrownFat ~ Sex + Diabetes + Age + Day
+                    + Month + Ext_Temp + bfat$"2D_Temp" + bfat$"3D_Temp"
+                    + bfat$"7D_Temp" + bfat$"1M_Temp" + Season + Duration_Sunshine
+                    + Weigth + Size + BMI + Glycemy+ LBW
+                    + Cancer_Status + Cancer_Type, family = binomial,
+                    data = bfat)
+summary(bfat.presence)
+```
+
+
+Use backward elimination to select a better model 
+```{r, results="hide"}
+step(bfat.presence, direction = "backward", test="Chisq")
+```
+
+```{r}
+# this is the selected model by backward elimination.
+bfat.presence.selected = glm(formula = BrownFat ~ Sex + Diabetes + Age + Ext_Temp + bfat$"2D_Temp" + 
+    bfat$"3D_Temp" + bfat$"1M_Temp" + Season + Duration_Sunshine + 
+    Weigth + LBW, family = binomial, data = bfat)
+summary(bfat.presence.selected)
+```
+The covariates that significantly affect the presence of brown fat is Diabetes, Age, Ext_Temp, 2D_Temp, 3D_Temp, 1M_Temp, Season, Duration_Sunshine, Weight, and LBW.
